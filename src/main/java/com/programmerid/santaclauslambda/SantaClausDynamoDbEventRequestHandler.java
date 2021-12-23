@@ -7,6 +7,8 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStream
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sns.model.PublishRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import static java.util.Objects.isNull;
@@ -15,8 +17,9 @@ import static java.util.Objects.isNull;
 public class SantaClausDynamoDbEventRequestHandler implements RequestHandler<DynamodbEvent, Void> {
 
     public static final String SANTA_CLAUS_LETTERS_SNS_TOPIC_ARN = "SANTA_CLAUS_LETTERS_TOPIC_SNS_ARN";
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-
+    @SneakyThrows
     @Override
     public Void handleRequest(DynamodbEvent event, Context context) {
         final String topicArn = System.getenv(SANTA_CLAUS_LETTERS_SNS_TOPIC_ARN);
@@ -33,7 +36,7 @@ public class SantaClausDynamoDbEventRequestHandler implements RequestHandler<Dyn
             log.info(record.getEventID());
             log.info(record.getEventName());
             log.info(record.getDynamodb().toString());
-            client.publish(new PublishRequest(topicArn, record.toString()));
+            client.publish(new PublishRequest(topicArn, this.objectMapper.writeValueAsString(record)));
         }
         log.info("Successfully processed " + event.getRecords().size() + " records.");
         return null;
